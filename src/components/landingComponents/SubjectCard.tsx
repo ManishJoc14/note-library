@@ -7,10 +7,9 @@ import { motion } from 'framer-motion';
 interface SubjectCardProps {
   name: string;
   icon: string;
-  path: string;
 }
 
-const SubjectCard: React.FC<SubjectCardProps> = ({ name, icon, path }) => {
+const SubjectCard: React.FC<SubjectCardProps> = ({ name, icon }) => {
   return (
     <motion.div
       whileHover={{ y: -5 }}

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useAuth } from "../../../context/AuthContext";
+import { useAuth } from "../../context/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
 import {
   LayoutDashboard,

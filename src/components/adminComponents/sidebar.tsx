@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { useAuth } from "../../../context/AuthContext";
+import { useAuth } from "../../context/AuthContext";
 import { useRouter, usePathname } from "next/navigation";
 import {
   BookOpen,

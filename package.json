@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.46.1",
     "cookies-next": "^5.0.2",
     "date-fns": "^4.1.0",
     "firebase": "^11.0.2",
@@ -19,7 +20,7 @@
     "react-dom": "^18.3.1",
     "react-hot-toast": "^2.4.1",
     "recharts": "^2.13.3",
-    "supabase": "^1.223.10"
+    "uuid": "^11.0.3"
   },
   "devDependencies": {
     "@types/node": "^20",

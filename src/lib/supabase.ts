@@ -1,67 +1,177 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient } from "@supabase/supabase-js";
+import { Note, Quiz } from "../types";
 
-// const supabaseUrl = 'https://zduohwulyilqfngqumyt.supabase.co';
-// const supabaseKey =
-//   'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpkdW9od3VseWlscWZuZ3F1bXl0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzA3NzQ2OTIsImV4cCI6MjA0NjM1MDY5Mn0.5femTvuWDJjJbK7OMpJgBSQ8vTNuUc78B9pwDdaK67c';
-
-
-const supabaseUrl = 'https://scoxjeudnbppryqgcdof.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNjb3hqZXVkbmJwcHJ5cWdjZG9mIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTczMjEyMTQ3MCwiZXhwIjoyMDQ3Njk3NDcwfQ.e1jAvKB0-ij9Puz9f8ySYKw1PQoW7-N-dQXqb-UqwSY'; 
-
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY || "";
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
-export const uploadFile = async (file: File, path: string) => {
+/**
+ * Upload a file to Supabase storage.
+ * @param file   - The file to upload.
+ * @param path   - The path where the file will be stored.
+ * @param title  - The title of the file.
+ * @param bucket - The bucket where the file will be stored.
+ * @returns Uploaded file data.
+ */
+export const uploadFile = async (
+  file: File,
+  path: string,
+  title: string,
+  bucket: "notes" | "quizzes"
+) => {
   try {
-    const fileExt = file.name.split('.').pop();
-    const fileName = `${Math.random().toString(36).substring(2)}.${fileExt}`;
+    const fileExt = file.name.split(".").pop();
+    const uniqueTitle = `${title}-${Date.now()}`;
+    const fileName = `${uniqueTitle}.${fileExt}`;
     const filePath = `${path}/${fileName}`;
 
-    // First try to upload to the existing bucket
-    let { data, error } = await supabase.storage
-      .from('notes')
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: false
-      });
+    const { data, error } = await supabase.storage
+      .from(bucket)
+      .upload(filePath, file, { cacheControl: "3600", upsert: false });
 
-    // If that fails, try the admin-upload bucket
-    if (error) {
-      ({ data, error } = await supabase.storage
-        .from('admin-upload')
-        .upload(filePath, file, {
-          cacheControl: '3600',
-          upsert: false
-        }));
-    }
+    if (error) throw error;
 
-    if (error) {
-      throw error;
-    }
+    const { publicUrl } = supabase.storage
+      .from(bucket)
+      .getPublicUrl(filePath).data;
 
-    return data;
+    if (!publicUrl) throw new Error("Failed to retrieve public URL");
+
+    return { path: filePath, publicUrl };
   } catch (error) {
-    console.error('Upload error:', error);
-    throw new Error('Failed to upload file. Please try again.');
+    console.error("Upload error:", error);
+    throw new Error("Failed to upload file. Please try again.");
   }
 };
 
-export const getFileUrl = (path: string) => {
+/**
+ * Save file metadata to Supabase database.
+ * @param metadata - Metadata for the uploaded file
+ * @returns Inserted metadata record.
+ */
+export const saveFileMetadata = async (metadata: Omit<Note, "id">) => {
   try {
-    // Try to get URL from notes bucket first
-    let { data } = supabase.storage.from('notes').getPublicUrl(path);
-    
-    // If that fails, try the admin-upload bucket
-    if (!data.publicUrl) {
-      ({ data } = supabase.storage.from('admin-upload').getPublicUrl(path));
-    }
+    const { data, error } = await supabase.from("notes").insert({
+      title: metadata.title,
+      subject: metadata.subject.toLowerCase(),
+      grade: metadata.grade,
+      description: metadata.description,
+      file_path: metadata.file_path,
+      file_url: metadata.file_url,
+      file_type: metadata.file_type,
+      file_size: metadata.file_size,
+      upload_date: metadata.upload_date || new Date().toISOString(),
+      downloads: metadata.downloads || 0,
+      likes: metadata.likes || 0,
+      views: metadata.views || 0,
+    });
 
-    if (!data.publicUrl) {
-      throw new Error('File not found');
-    }
+    if (error) throw error;
 
-    return data.publicUrl;
+    return data;
   } catch (error) {
-    console.error('Error getting file URL:', error);
-    throw new Error('Failed to get file URL');
+    console.error("Error saving metadata:", error);
+    throw new Error("Failed to save metadata. Please try again.");
+  }
+};
+
+/**
+ * Fetch all notes metadata from the Supabase database.
+ * @returns List of notes metadata based on grade and subject.
+ */
+export const fetchNotesByGradeAndSubject = async (
+  grade: string,
+  subject: string
+) => {
+  try {
+    const { data, error } = await supabase
+      .from("notes")
+      .select("*")
+      .eq("grade", grade)
+      .eq("subject", subject);
+
+    if (error) throw error;
+
+    return data;
+  } catch (error) {
+    console.error("Error fetching notes:", error);
+    throw new Error("Failed to fetch notes.");
+  }
+};
+
+/**
+ * Save a quiz to the Supabase database.
+ * @param metaData - The quiz data to be saved.
+ * @returns Inserted quiz record.
+ */
+export const saveQuiz = async (metaData: Omit<Quiz, "id">) => {
+  try {
+    const { data, error } = await supabase.from("quizzes").insert({
+      title: metaData.title,
+      subject: metaData.subject,
+      grade: metaData.grade,
+      duration: metaData.duration,
+      difficulty: metaData.difficulty,
+      questions: metaData.questions,
+      participants: metaData.participants || 0,
+      avg_score: metaData.avg_score || 0,
+      created_at: metaData.created_at || new Date().toISOString(),
+      image: metaData.image,
+    });
+
+    if (error) throw error;
+
+    return data;
+  } catch (error) {
+    console.error("Error saving quiz:", error);
+    throw new Error("Failed to save quiz. Please try again.");
+  }
+};
+
+/**
+ * Fetch all quizzes from the Supabase database.
+ * Quizzes are sorted by creation date in descending order (most recent first).
+ * @param grade - The grade for which quizzes should be fetched.
+ * @returns List of quizzes metadata based on grade.
+ */
+export const fetchAllQuiz = async (grade: string) => {
+  try {
+    const { data, error } = await supabase
+      .from("quizzes")
+      .select("*")
+      .eq("grade", grade)
+      .order("created_at", { ascending: false }); // Sort by created_at in descending order
+
+    if (error) throw error;
+
+
+    console.log(data);
+    return data; 
+  } catch (error) {
+    console.error("Error fetching the latest quiz:", error);
+    throw new Error("Failed to fetch the latest quiz.");
+  }
+};
+
+
+/**
+ * Fetch a quiz by its unique ID from the Supabase database.
+ * @param id The unique identifier of the quiz.
+ * @returns The quiz data. 
+ */
+export const fetchQuizById = async (id: string) => {
+  try {
+    const { data, error } = await supabase
+      .from("quizzes") 
+      .select("*")
+      .eq("id", id)
+      .single();
+
+    if (error) throw error;
+
+    return data;
+  } catch (error) {
+    console.error("Error fetching quiz by ID:", error);
+    throw new Error("Failed to fetch quiz.");
   }
 };

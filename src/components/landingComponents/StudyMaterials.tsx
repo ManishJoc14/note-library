@@ -1,25 +1,29 @@
 "use client";
 
-import { Search } from "lucide-react";
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import Link from "next/link"; 
-import { useGrade } from "../../../../context/GradeContext"; 
-import { subjects11, subjects12 } from "../../../../data/subjects";
-import SubjectCard from "../../../../components/landingComponents/SubjectCard";
+import SubjectCard from "./SubjectCard";
+import { usePathname } from "next/navigation";
+import { useGrade } from "../../context/GradeContext";
+import { subjects11, subjects12 } from "../../data/subjects";
+import { Search } from "lucide-react";
 
 export default function StudyMaterials() {
-  const { grade, setGrade } = useGrade(); 
+  const pathname = usePathname();
+  const { grade, setGrade } = useGrade();
   const [searchQuery, setSearchQuery] = useState("");
-
   const subjects = grade === "11" ? subjects11 : subjects12;
 
   const filteredSubjects = subjects.filter((subject) =>
     subject.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  const isHomePage = pathname === "/";
+
   return (
-    <section className="relative">
+    <section className={`${isHomePage ? "py-20" : ""} relative`}>
+      <div className="absolute inset-0 bg-gradient-to-b from-purple-900/50 to-slate-900/50" />
+
       <div className="container mx-auto px-4 relative">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -39,9 +43,9 @@ export default function StudyMaterials() {
         <div className="flex flex-col md:flex-row items-center justify-between mb-8">
           <div className="flex space-x-4 mb-4 md:mb-0">
             <button
-              onClick={() => setGrade(11)}
+              onClick={() => setGrade("11")}
               className={`px-6 py-2 rounded-full transition-all duration-300 ${
-                grade === 11
+                grade === "11"
                   ? "bg-purple-600 text-white shadow-lg shadow-purple-500/50"
                   : "bg-white/10 text-gray-300 hover:bg-white/20"
               }`}
@@ -49,9 +53,9 @@ export default function StudyMaterials() {
               Grade 11
             </button>
             <button
-              onClick={() => setGrade(12)}
+              onClick={() => setGrade("12")}
               className={`px-6 py-2 rounded-full transition-all duration-300 ${
-                grade === 12
+                grade === "12"
                   ? "bg-purple-600 text-white shadow-lg shadow-purple-500/50"
                   : "bg-white/10 text-gray-300 hover:bg-white/20"
               }`}
@@ -83,9 +87,7 @@ export default function StudyMaterials() {
               viewport={{ once: true }}
               transition={{ delay: index * 0.1 }}
             >
-              <Link href={`/student/notes/${grade}/${subject.id}`} passHref>
-                <SubjectCard {...subject} />
-              </Link>
+              <SubjectCard {...subject} />
             </motion.div>
           ))}
         </div>

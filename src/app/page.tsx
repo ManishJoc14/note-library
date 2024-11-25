@@ -1,57 +1,37 @@
 "use client";
 
 import React, { useState } from "react";
-import {
-  Book,
-  GraduationCap,
-  BrainCircuit,
-  ChevronRight,
-  Search,
-  ArrowRight,
-} from "lucide-react";
+import { ChevronRight, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Toaster } from "react-hot-toast";
 import AuthModal from "./(auth)/login/AuthModal";
-import Navbar from "./components/landingComponents/Header";
-import SubjectCard from "./components/landingComponents/SubjectCard";
-import QuizSection from "./components/landingComponents/QuizSection";
-import Features from "./components/landingComponents/Features";
-import Goals from "./components/landingComponents/Goals";
-import Testimonials from "./components/landingComponents/Testimonials";
-import Contact from "./components/landingComponents/Contact";
-import Footer from "./components/landingComponents/Footer";
-import Hero3D from "./components/landingComponents/Hero";
+import Header from "../components/landingComponents/Header";
+import QuizSection from "../components/landingComponents/QuizSection";
+import Features from "../components/landingComponents/Features";
+import Goals from "../components/landingComponents/Goals";
+import Testimonials from "../components/landingComponents/Testimonials";
+import Contact from "../components/landingComponents/Contact";
+import Footer from "../components/landingComponents/Footer";
+import Hero3D from "../components/landingComponents/Hero";
+import StudyMaterials from "../components/landingComponents/StudyMaterials";
+import { useAuth } from "../context/AuthContext";
+import { useRouter } from "next/navigation"; 
 
 export default function Landing() {
-  const [selectedGrade, setSelectedGrade] = useState<11 | 12>(11);
-  const [searchQuery, setSearchQuery] = useState("");
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const {isAuthenticated , isAdmin} = useAuth();
+  const router = useRouter();
 
-  const subjects = {
-    11: [
-      { name: "Mathematics", icon: "📐", path: "/grade-11/math" },
-      { name: "Physics", icon: "⚡", path: "/grade-11/physics" },
-      { name: "Chemistry", icon: "🧪", path: "/grade-11/chemistry" },
-      { name: "Biology", icon: "🧬", path: "/grade-11/biology" },
-    ],
-    12: [
-      { name: "Advanced Mathematics", icon: "📊", path: "/grade-12/math" },
-      { name: "Advanced Physics", icon: "🔭", path: "/grade-12/physics" },
-      { name: "Advanced Chemistry", icon: "⚗️", path: "/grade-12/chemistry" },
-      { name: "Advanced Biology", icon: "🔬", path: "/grade-12/biology" },
-    ],
-  };
-
-  const filteredSubjects = subjects[selectedGrade].filter((subject) =>
-    subject.name.toLowerCase().includes(searchQuery.toLowerCase())
-  );
-
+  const handleClick = () => {
+      const role = isAdmin ? "admin" : "student";
+      isAuthenticated ? router.push(`/${role}/dashboard`) : setIsAuthModalOpen(true) ;
+  } 
   return (
     <>
       <Toaster position="top-right" />
       <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
         <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]"></div>
-        <Navbar onAuthClick={() => setIsAuthModalOpen(true)} />
+        <Header onAuthClick={() => setIsAuthModalOpen(true)} />
 
         <main className="relative">
           {/* Hero Section */}
@@ -89,7 +69,7 @@ export default function Landing() {
                       <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
-                        onClick={() => setIsAuthModalOpen(true)}
+                        onClick={handleClick}
                         className="btn-primary"
                       >
                         Get Started
@@ -109,82 +89,9 @@ export default function Landing() {
             </div>
           </section>
 
-          {/* Study Materials Section */}
-          <section className="py-20 relative">
-            <div className="absolute inset-0 bg-gradient-to-b from-purple-900/50 to-slate-900/50" />
-            <div className="container mx-auto px-4 relative">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.5 }}
-                className="text-center mb-12"
-              >
-                <h2 className="text-3xl font-bold text-white mb-4">
-                  Study Materials
-                </h2>
-                <p className="text-gray-300 max-w-2xl mx-auto">
-                  Access comprehensive study materials tailored to your grade
-                  level
-                </p>
-              </motion.div>
-
-              <div className="flex flex-col md:flex-row items-center justify-between mb-8">
-                <div className="flex space-x-4 mb-4 md:mb-0">
-                  <button
-                    onClick={() => setSelectedGrade(11)}
-                    className={`px-6 py-2 rounded-full transition-all duration-300 ${
-                      selectedGrade === 11
-                        ? "bg-purple-600 text-white shadow-lg shadow-purple-500/50"
-                        : "bg-white/10 text-gray-300 hover:bg-white/20"
-                    }`}
-                  >
-                    Grade 11
-                  </button>
-                  <button
-                    onClick={() => setSelectedGrade(12)}
-                    className={`px-6 py-2 rounded-full transition-all duration-300 ${
-                      selectedGrade === 12
-                        ? "bg-purple-600 text-white shadow-lg shadow-purple-500/50"
-                        : "bg-white/10 text-gray-300 hover:bg-white/20"
-                    }`}
-                  >
-                    Grade 12
-                  </button>
-                </div>
-                <div className="relative">
-                  <Search
-                    className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400"
-                    size={20}
-                  />
-                  <input
-                    type="text"
-                    placeholder="Search subjects..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="pl-10 pr-4 py-2 bg-white/10 border border-white/20 rounded-full text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {filteredSubjects.map((subject, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: index * 0.1 }}
-                  >
-                    <SubjectCard {...subject} />
-                  </motion.div>
-                ))}
-              </div>
-            </div>
-          </section>
-
+          <StudyMaterials />
           <Features />
-          <QuizSection grade={selectedGrade} />
+          <QuizSection />
           <Goals />
           <Testimonials />
           <Contact />

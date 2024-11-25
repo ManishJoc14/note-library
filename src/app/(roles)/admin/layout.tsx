@@ -1,4 +1,4 @@
-import LayoutWrapper from "../../components/adminComponents/layoutWrapper"; 
+import LayoutWrapper from "../../../components/adminComponents/layoutWrapper"; 
 
 export default function AdminDashboardLayout({
   children

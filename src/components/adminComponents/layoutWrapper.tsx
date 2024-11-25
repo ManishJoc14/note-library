@@ -4,6 +4,7 @@ import Sidebar from "./sidebar";
 import { useState } from "react";
 import { Bell } from "lucide-react";
 import Notifications from "./notifications";
+import { usePathname } from "next/navigation";
 
 export default function LayoutWrapper({
   children,
@@ -12,7 +13,15 @@ export default function LayoutWrapper({
 }) {
   const [activeTab, setActiveTab] = useState("dashboard");
   const [showNotifications, setShowNotifications] = useState(false);
+  const pathname = usePathname();
+  const lastSegment = pathname.split("/").pop(); // last part of the path
 
+  const capitalizeFirstLetter = (str) => {
+    return str.charAt(0).toUpperCase() + str.slice(1);
+  };
+  
+  const capitalizedPath = capitalizeFirstLetter(lastSegment);
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
       <div className="absolute inset-0 bg-[url('/grid.svg')] bg-center [mask-image:linear-gradient(180deg,white,rgba(255,255,255,0))]"></div>
@@ -24,7 +33,7 @@ export default function LayoutWrapper({
       <main className="ml-64 p-8 relative">
         <div className="flex justify-between items-center mb-8">
           <h1 className="text-2xl font-bold text-white">
-            {activeTab.charAt(0).toUpperCase() + activeTab.slice(1)}
+            {capitalizedPath}
           </h1>
           <div className="relative">
             <button
@@ -43,5 +52,5 @@ export default function LayoutWrapper({
         {children}
       </main>
     </div>
-  );
+  );p
 }

@@ -33,6 +33,7 @@ interface AuthContextType {
   logout: () => Promise<void>;
 }
 
+// create context with default vlaues
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const createUserProfile = async (firebaseUser: FirebaseUser): Promise<User> => {
@@ -59,6 +60,7 @@ const createUserProfile = async (firebaseUser: FirebaseUser): Promise<User> => {
   return newUser;
 };
 
+// Provider compoenent
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
@@ -203,6 +205,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 };
 
+
+// custom hook to use context
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {

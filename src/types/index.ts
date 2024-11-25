@@ -10,11 +10,15 @@ export interface Note {
   title: string;
   subject: string;
   grade: string;
-  fileUrl: string;
-  fileType: string;
-  fileSize: string;
+  description: string;
+  file_path: string;
+  file_url: string;
+  file_type: string;
+  file_size: string;
+  upload_date: string;
   downloads: number;
-  uploadDate: string;
+  likes: number;
+  views: number;
 }
 
 export interface Quiz {
@@ -22,10 +26,13 @@ export interface Quiz {
   title: string;
   subject: string;
   grade: string;
-  questions: Question[];
   duration: number;
-  difficulty: 'Easy' | 'Medium' | 'Hard';
-  totalAttempts: number;
+  difficulty: "Easy" | "Medium" | "Hard";
+  questions: Question[];
+  participants: number;
+  avg_score: number;
+  created_at: string;
+  image: string;
 }
 
 export interface Question {
@@ -41,7 +48,7 @@ export interface User {
   email: string;
   grade: string;
   phone: string;
-  role: 'student' | 'admin' ;
+  role: "student" | "admin";
   completedQuizzes: string[];
   quizScores: Record<string, number>;
 }

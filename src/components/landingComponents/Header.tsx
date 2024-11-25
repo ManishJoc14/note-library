@@ -3,13 +3,17 @@
 import React from 'react';
 import { GraduationCap } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { useAuth } from "../../context/AuthContext";
 
 interface HeaderProps {
   onAuthClick: () => void;
 }
 
 const Header: React.FC<HeaderProps> = ({ onAuthClick }) => {
+  const { isAuthenticated, logout } = useAuth();
+
   return (
+    <>
     <nav className="relative z-50">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between h-20">
@@ -33,15 +37,16 @@ const Header: React.FC<HeaderProps> = ({ onAuthClick }) => {
             <motion.button 
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={onAuthClick}
+              onClick={isAuthenticated ? logout : onAuthClick}
               className="btn-primary"
             >
-              Sign In
+             { isAuthenticated ? "LogOut" : "Sign In"  }
             </motion.button>
           </motion.div>
         </div>
       </div>
     </nav>
+    </>
   );
 };
 

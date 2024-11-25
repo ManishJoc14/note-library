@@ -1,4 +1,4 @@
-import Sidebar from "../../components/studentComponents/sidebar";
+import Sidebar from "../../../components/studentComponents/sidebar";
 
 export default function UserDashboardLayout({
   children

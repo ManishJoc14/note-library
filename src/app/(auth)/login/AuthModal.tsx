@@ -152,7 +152,6 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
               </button>
             </div>
 
-
             {/* FIXME - need to implement correctly */}
             {/* <div className="relative my-6">
               <div className="relative flex justify-start text-sm">
