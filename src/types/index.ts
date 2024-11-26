@@ -39,7 +39,7 @@ export interface Question {
   id: string;
   text: string;
   options: string[];
-  correctAnswer: number;
+  correctAnswer: number | string;
 }
 
 export interface User {

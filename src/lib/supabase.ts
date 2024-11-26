@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { Note, Quiz } from "../types";
+import { encryptAnswer } from "./encrypt_decrypt"; 
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY || "";
@@ -105,14 +106,23 @@ export const fetchNotesByGradeAndSubject = async (
  * @returns Inserted quiz record.
  */
 export const saveQuiz = async (metaData: Omit<Quiz, "id">) => {
+ 
   try {
+    // Encrypt the correct answers for each question
+    const encryptedQuestions = metaData.questions.map((question) => {
+      return {
+        ...question,
+        correctAnswer: encryptAnswer(question.correctAnswer.toString()), 
+      };
+    });
+    
     const { data, error } = await supabase.from("quizzes").insert({
       title: metaData.title,
       subject: metaData.subject,
       grade: metaData.grade,
       duration: metaData.duration,
       difficulty: metaData.difficulty,
-      questions: metaData.questions,
+      questions: encryptedQuestions,
       participants: metaData.participants || 0,
       avg_score: metaData.avg_score || 0,
       created_at: metaData.created_at || new Date().toISOString(),
@@ -175,3 +185,6 @@ export const fetchQuizById = async (id: string) => {
     throw new Error("Failed to fetch quiz.");
   }
 };
+
+
+

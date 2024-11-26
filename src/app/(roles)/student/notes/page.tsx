@@ -39,9 +39,9 @@ export default function StudyMaterials() {
         <div className="flex flex-col md:flex-row items-center justify-between mb-8">
           <div className="flex space-x-4 mb-4 md:mb-0">
             <button
-              onClick={() => setGrade(11)}
+              onClick={() => setGrade("11")}
               className={`px-6 py-2 rounded-full transition-all duration-300 ${
-                grade === 11
+                grade === "11"
                   ? "bg-purple-600 text-white shadow-lg shadow-purple-500/50"
                   : "bg-white/10 text-gray-300 hover:bg-white/20"
               }`}
@@ -49,9 +49,9 @@ export default function StudyMaterials() {
               Grade 11
             </button>
             <button
-              onClick={() => setGrade(12)}
+              onClick={() => setGrade("12")}
               className={`px-6 py-2 rounded-full transition-all duration-300 ${
-                grade === 12
+                grade === "12"
                   ? "bg-purple-600 text-white shadow-lg shadow-purple-500/50"
                   : "bg-white/10 text-gray-300 hover:bg-white/20"
               }`}

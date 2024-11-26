@@ -25,8 +25,9 @@ const QuizCreator: React.FC = () => {
   const [difficulty, setDifficulty] = useState<"Easy" | "Medium" | "Hard">(
     "Medium"
   );
-  const [questions, setQuestions] = useState<Omit<Question, "id">[]>([
-    { text: "", options: ["", "", "", ""], correctAnswer: 0 },
+
+  const [questions, setQuestions] = useState<Question[]>([
+    { id: uuidv4(), text: "", options: ["", "", "", ""], correctAnswer: 0 },
   ]);
   const [image, setImage] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
@@ -35,7 +36,7 @@ const QuizCreator: React.FC = () => {
   const handleAddQuestion = () => {
     setQuestions([
       ...questions,
-      { text: "", options: ["", "", "", ""], correctAnswer: 0 },
+      { id: uuidv4(), text: "", options: ["", "", "", ""], correctAnswer: 0 },
     ]);
   };
 
@@ -45,15 +46,20 @@ const QuizCreator: React.FC = () => {
 
   const handleQuestionChange = (
     index: number,
-    field: keyof Omit<Question, "id"> | "options",
-    value: any
+    field: keyof Omit<Question, "id">,
+    value: { index: number; text: string } | string | number
   ) => {
     const newQuestions = [...questions];
+
     if (field === "options") {
-      newQuestions[index].options[value.index] = value.text;
+      const optionValue = value as { index: number; text: string };
+      newQuestions[index].options[optionValue.index] = optionValue.text;
     } else {
-      (newQuestions[index] as any)[field] = value;
+      (newQuestions[index][field] as string | number) = value as
+        | string
+        | number;
     }
+
     setQuestions(newQuestions);
   };
 
@@ -74,7 +80,7 @@ const QuizCreator: React.FC = () => {
         grade,
         duration,
         difficulty,
-        questions: questions.map((q, i) => ({ ...q, id: uuidv4() })),
+        questions: questions.map((q, i) => ({ ...q, id: uuidv4() })), // add id's
         participants: 0,
         avg_score: 0,
         created_at: new Date().toISOString(),
@@ -165,7 +171,7 @@ const QuizCreator: React.FC = () => {
               </label>
               <input
                 type="number"
-                value={duration}
+                value={duration || 1}
                 onChange={(e) => setDuration(parseInt(e.target.value))}
                 className="w-full px-4 py-2 rounded-lg border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200"
                 min="1"
@@ -217,7 +223,9 @@ const QuizCreator: React.FC = () => {
             <div className="text-center">
               <Upload className="mx-auto h-12 w-12 text-gray-400" />
               <p className="mt-2 text-sm text-gray-600">
-                {image ? image.name : "Drop your Image here, or click to select"}
+                {image
+                  ? image.name
+                  : "Drop your Image here, or click to select"}
               </p>
               <p className="mt-1 text-xs text-gray-500">
                 PNG, JPG, JPEG up to 10MB
@@ -228,7 +236,7 @@ const QuizCreator: React.FC = () => {
           <div className="space-y-6">
             {questions.map((question, qIndex) => (
               <div
-                key={qIndex}
+                key={question.id}
                 className="p-4 border border-gray-200 rounded-lg"
               >
                 <div className="flex justify-between items-center mb-4">
@@ -258,7 +266,10 @@ const QuizCreator: React.FC = () => {
                   />
 
                   {question.options.map((option, oIndex) => (
-                    <div key={oIndex} className="flex items-center gap-4">
+                    <div
+                      key={oIndex}
+                      className="flex items-center gap-4"
+                    >
                       <input
                         type="radio"
                         name={`correct-${qIndex}`}

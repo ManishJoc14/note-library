@@ -91,7 +91,7 @@ const Dashboard = () => {
               <YAxis stroke="#9CA3AF" />
               <Tooltip
                 contentStyle={{
-                  backgroundColor: '#1F2937',
+                  backgroundColor: "#ccc",
                   border: 'none',
                   borderRadius: '8px',
                   boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
