@@ -1,39 +1,86 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { fetchNotesByGradeAndSubject } from "../../../../../../lib/supabase";
+import {
+  fetchNotesByGradeAndSubject,
+  togglePostLike,
+} from "../../../../../../lib/supabase";
 import { Note } from "../../../../../../types";
 import { useParams } from "next/navigation";
 import NoteCard from "./notesCard";
+import { useAuth } from "../../../../../../context/AuthContext";
+import { Toaster, toast } from "react-hot-toast";
 
 const Notes: React.FC = () => {
-  const [notes, setNotes] = useState<Note[]>([]); 
-  const [isLoading, setIsLoading] = useState<boolean>(true); 
-  const [error, setError] = useState<string>(""); 
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string>("");
+  const { user } = useAuth();
 
-  const params = useParams(); 
-  const { grade, subject } = params as { grade: string; subject: string }; 
+  const params = useParams();
+  const { grade, subject } = params as { grade: string; subject: string };
 
   useEffect(() => {
-    const fetchNotes = async () => {
-      try {
-        setIsLoading(true);
-        const data = await fetchNotesByGradeAndSubject(grade, subject);
-        setNotes(data || []);
-      } catch (err: any) {
-        setError(err.message || "Failed to fetch notes.");
-      } finally {
-        setIsLoading(false);
-      }
-    };
+    if (user) {
+      const fetchNotes = async () => {
+        try {
+          setIsLoading(true);
+          const data = await fetchNotesByGradeAndSubject(grade, subject);
 
-    fetchNotes();
-  }, [grade, subject]);
+          setNotes(
+            data.map((note) => ({
+              ...note,
+              isLiked: user.likedPosts.includes(note.id),
+            }))
+          );
+        } catch (err: any) {
+          setError(err.message || "Failed to fetch notes.");
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      fetchNotes();
+    }
+  }, [user, grade, subject]);
 
   // Handler for 'Like' action
-  const handleLike = (noteId: string) => {
-    console.log(`Liked the note with ID: ${noteId}`);
-    // Implement like functionality
+  const handleLike = async (noteId: string) => {
+    if (!user) {
+      setError("User not authenticated.");
+      return;
+    }
+
+    // optimistic ui update (toggle like)
+    setNotes((prevNotes) =>
+      prevNotes.map((note) =>
+        note.id === noteId
+          ? {
+              ...note,
+              likes: note.isLiked ? note.likes - 1 : note.likes + 1,
+              isLiked: !note.isLiked,
+            }
+          : note
+      )
+    );
+
+    const result = await togglePostLike(user.id, noteId);
+
+    if (!result?.success) {
+      // if it fails toggle again
+      setNotes((prevNotes) =>
+        prevNotes.map((note) =>
+          note.id === noteId
+            ? {
+                ...note,
+                likes: note.isLiked ? note.likes - 1 : note.likes + 1,
+                isLiked: !note.isLiked,
+              }
+            : note
+        )
+      );
+      setError(result?.message || "Failed to toggle like.");
+    }
   };
 
   const handleDownload = (file_url: string) => {
@@ -44,7 +91,7 @@ const Notes: React.FC = () => {
     a.click();
     document.body.removeChild(a);
   };
-  
+
   // Handler for 'Share' action
   const handleShare = (noteId: string) => {
     console.log(`Shared the note with ID: ${noteId}`);
@@ -53,18 +100,25 @@ const Notes: React.FC = () => {
 
   // Loading, error, and no data states
   if (isLoading) {
-    return <div className='text-white'>Loading notes...</div>;
+    return <div className="text-white">Loading notes...</div>;
   }
 
   if (error) {
-    return <div className="text-red-500">Error: {error}</div>;
+    toast.error(error);
+    // return <div className="text-red-500">Error: {error}</div>;
   }
 
   if (!notes.length) {
-    return <div className='text-white'>No notes available for this grade and subject.</div>;
+    return (
+      <div className="text-white">
+        No notes available for this grade and subject.
+      </div>
+    );
   }
 
   return (
+    <>
+      <Toaster position="top-right" />
     <div className="min-h-screen grid grid-cols-1 md:grid-cols-2 gap-2">
       {notes.map((note) => (
         <NoteCard
@@ -76,6 +130,7 @@ const Notes: React.FC = () => {
         />
       ))}
     </div>
+</>  
   );
 };
 

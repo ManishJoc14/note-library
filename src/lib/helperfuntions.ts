@@ -34,3 +34,9 @@ export const validateFile = (file: File, type: "pdf" | "image") => {
     throw new Error("File size must be less than 50MB.");
   }
 };
+
+
+export const capitalizeFirstLetter = (str: string): string => {
+  if (!str) return str;
+  return str.charAt(0).toUpperCase() + str.slice(1);
+};

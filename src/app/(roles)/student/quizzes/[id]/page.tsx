@@ -1,16 +1,20 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Quiz } from "../../../../../types";
+import { Quiz, ReviewQuestion } from "../../../../../types";
+import { useAuth } from "../../../../../context/AuthContext";
 import { Clock } from "lucide-react";
-import { fetchQuizById } from "../../../../../lib/supabase";
-import { useParams } from "next/navigation";
-import toast, { Toaster } from "react-hot-toast";
-import QuizSummary from "./quizSummary";
-import { decryptAnswer } from "../../../../../lib/encrypt_decrypt"; 
+import { fetchQuizById, saveQuizSummary } from "../../../../../lib/supabase";
+import { useParams, useRouter } from "next/navigation";
+import { Toaster } from "react-hot-toast";
+import { decryptAnswer } from "../../../../../lib/encrypt_decrypt";
+import { v4 as uuidv4 } from "uuid";
 
+// TODO - add skeletons for all when fetching
 const QuizPlayer: React.FC = () => {
   const params = useParams();
+  const router = useRouter();
+  const { user } = useAuth();
   const { id } = params as { id: string };
 
   const [quiz, setQuiz] = useState<Quiz | null>(null);
@@ -83,25 +87,7 @@ const QuizPlayer: React.FC = () => {
   const handleComplete = () => {
     if (!isCompleted) {
       setIsCompleted(true);
-
-      // Calculate and display the score
-      const score = calculateScore();
-      toast.success(`Your Score: ${score}%`);
     }
-  };
-
-  const calculateScore = () => {
-    let correct = 0;
-    if (quiz) {
-      selectedAnswers.forEach((answer, index) => {
-        const decryptedCorrectAnswer = decryptAnswer(quiz.questions[index].correctAnswer as string); 
-        if (answer === parseInt(decryptedCorrectAnswer)) {
-          correct++;
-        }
-      });
-      return (correct / quiz.questions.length) * 100;
-    }
-    return 0;
   };
 
   const formatTime = (seconds: number) => {
@@ -129,25 +115,28 @@ const QuizPlayer: React.FC = () => {
     );
   }
 
-  if (isCompleted && quiz) {
-    // Calculate performance metrics
+  if (isCompleted && quiz && user) {
     const correctCount = selectedAnswers.reduce((count, answer, index) => {
-      const decryptedCorrectAnswer = decryptAnswer(quiz.questions[index].correctAnswer as string); // Decrypt the correct answer
+      const decryptedCorrectAnswer = decryptAnswer(
+        quiz.questions[index].correctAnswer as string
+      ); // Decrypt the correct answer
       return answer === parseInt(decryptedCorrectAnswer) ? count + 1 : count;
     }, 0);
 
     const skippedCount =
-    quiz.questions.length -
-    selectedAnswers.filter((ans) => ans !== undefined && ans !== -1).length;
-    
+      quiz.questions.length -
+      selectedAnswers.filter((ans) => ans !== undefined && ans !== -1).length;
+
     const missedCount = quiz.questions.length - correctCount - skippedCount;
 
+    const score = (correctCount / quiz.questions.length) * 100;
+
     // Prepare questions review data
-    const questionsReview = quiz.questions.map((q, index) => {
+    const questionsReview: ReviewQuestion[] = quiz.questions.map((q, index) => {
       const userAnswer = selectedAnswers[index];
       let status: "correct" | "missed" | "skipped" = "skipped";
       const decryptedCorrectAnswer = decryptAnswer(q.correctAnswer as string); // Decrypt the correct answer
-      
+
       if (userAnswer !== undefined && userAnswer !== -1) {
         if (userAnswer === parseInt(decryptedCorrectAnswer)) {
           status = "correct";
@@ -155,19 +144,43 @@ const QuizPlayer: React.FC = () => {
           status = "missed";
         }
       }
-      return { question: q.text, status, options: q.options, userAnswer, correctAnswer: parseInt(decryptedCorrectAnswer) };
+      return {
+        id: q.id,
+        text: q.text,
+        status,
+        options: q.options,
+        userAnswer,
+        correctAnswer: parseInt(decryptedCorrectAnswer),
+      };
     });
 
+    const quizSummaryData = {
+      id: quiz.id,
+      title: quiz.title,
+      subject: quiz.subject,
+      grade: quiz.grade,
+      score,
+      correctCount,
+      missedCount,
+      skippedCount,
+      questionsReview,
+      completedAt: new Date().toISOString(),
+    };
 
-    return (
-      <QuizSummary
-        score={calculateScore()}
-        correctCount={correctCount}
-        missedCount={missedCount}
-        skippedCount={skippedCount}
-        questionsReview={questionsReview}
-      />
-    );
+    const updatedQuizData = [
+      ...user.quizData?.filter((q) => q.id !== quiz.id),
+      quizSummaryData,
+    ];
+
+    user.quizData = [...updatedQuizData];
+
+    async function save() {
+      if (user) {
+        await saveQuizSummary(user.id, quizSummaryData);
+        router.push(`/student/quizzes/summary/${quizSummaryData.id}`);
+      }
+    }
+    save();
   }
 
   const question = quiz.questions[currentQuestion];

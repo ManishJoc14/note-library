@@ -1,3 +1,4 @@
+
 import { Subject } from "../types";
 
 export const subjects11: Subject[] = [

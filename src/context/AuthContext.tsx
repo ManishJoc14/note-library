@@ -9,13 +9,13 @@ import {
   createUserWithEmailAndPassword,
   signOut,
   updateProfile,
-  getRedirectResult,
   sendPasswordResetEmail,
 } from "firebase/auth";
 import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, googleProvider, db } from "../lib/firebase";
 import { User } from "../types";
 import { useRouter } from "next/navigation";
+import { saveUserToTable, fetchUser } from "../lib/supabase";
 
 interface AuthContextType {
   user: User | null;
@@ -33,9 +33,9 @@ interface AuthContextType {
   logout: () => Promise<void>;
 }
 
-// create context with default vlaues
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+// Create or fetch user profile from Firestore
 const createUserProfile = async (firebaseUser: FirebaseUser): Promise<User> => {
   const userDoc = await getDoc(doc(db, "users", firebaseUser.uid));
 
@@ -52,15 +52,19 @@ const createUserProfile = async (firebaseUser: FirebaseUser): Promise<User> => {
     grade: "11",
     phone: "",
     role: isAdmin ? "admin" : "student",
-    completedQuizzes: [],
-    quizScores: {},
+    quizData: [],
+    likedPosts: [],
+    viewedPosts: [],
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   };
 
   await setDoc(doc(db, "users", firebaseUser.uid), newUser);
+  await saveUserToTable(newUser);
   return newUser;
 };
 
-// Provider compoenent
+// Provider component
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
@@ -69,43 +73,63 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const router = useRouter();
 
+
   useEffect(() => {
     const handleUser = async (firebaseUser: FirebaseUser | null) => {
-      console.log("Auth state changed:", firebaseUser); // Debugging
-      setLoading(true); // Start loading
+      setLoading(true);
       if (firebaseUser) {
         const userData = await createUserProfile(firebaseUser);
-        setUser(userData);
+        const fetchedUser = await fetchUser(userData.id);
+
+        setUser({
+          id: fetchedUser.id,
+          fullName: fetchedUser.full_name,
+          email: fetchedUser.email,
+          grade: fetchedUser.grade,
+          phone: fetchedUser.phone,
+          role: fetchedUser.role,
+          quizData: fetchedUser.quiz_data,
+          likedPosts: fetchedUser.liked_posts,
+          viewedPosts: fetchedUser.viewed_posts,
+          createdAt: fetchedUser.created_at,
+          updatedAt: fetchedUser.updated_at,
+        })
         setIsAuthenticated(true);
-      } else {
+      }
+      else {
         setUser(null);
         setIsAuthenticated(false);
       }
-      setLoading(false); // End loading
+      setLoading(false);
     };
-  
+
     const unsubscribe = auth.onAuthStateChanged(handleUser);
-    return () => unsubscribe(); // Cleanup listener on unmount
+    return () => unsubscribe();
   }, []);
-  
 
   useEffect(() => {
     if (!loading) {
       if (user) {
-        setCookie("role", user.role, { path: "/", secure: true, sameSite: "strict" });
-        setCookie("isLoggedIn", true, { path: "/", secure: true, sameSite: "strict" });
+        setCookie("role", user.role, {
+          path: "/",
+          secure: true,
+          sameSite: "strict",
+        });
+        setCookie("isLoggedIn", true, {
+          path: "/",
+          secure: true,
+          sameSite: "strict",
+        });
       } else {
         deleteCookie("role", { path: "/" });
-        setCookie("isLoggedIn", false, { path: "/", secure: true, sameSite: "strict" });
+        setCookie("isLoggedIn", false, {
+          path: "/",
+          secure: true,
+          sameSite: "strict",
+        });
       }
     }
   }, [user, loading]);
-
-  useEffect(() => {
-    console.log("Auth State: ", { user, isAuthenticated, loading });
-  }, [user, isAuthenticated, loading]);
-  
-  
 
   const redirectToDashboard = (role: string) => {
     if (role === "admin") {
@@ -167,7 +191,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const resetPassword = async (email: string) => {
     try {
       await sendPasswordResetEmail(auth, email);
-      console.log("Password reset email sent.");
     } catch (error) {
       console.error("Error sending password reset email:", error);
       throw new Error("Failed to send password reset email. Try again later.");
@@ -205,8 +228,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   );
 };
 
-
-// custom hook to use context
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {

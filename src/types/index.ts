@@ -19,6 +19,7 @@ export interface Note {
   downloads: number;
   likes: number;
   views: number;
+  isLiked?: boolean;
 }
 
 export interface Quiz {
@@ -33,6 +34,7 @@ export interface Quiz {
   avg_score: number;
   created_at: string;
   image: string;
+  taken_by: string;
 }
 
 export interface Question {
@@ -42,15 +44,40 @@ export interface Question {
   correctAnswer: number | string;
 }
 
-export interface User {
+export interface ReviewQuestion {
   id: string;
-  fullName: string;
-  email: string;
+  text: string;
+  status: "correct" | "missed" | "skipped";
+  options: string[];
+  userAnswer: number;
+  correctAnswer: number;
+}
+
+export interface QuizSummaryProps {
+  id: string;
+  score: number;
+  title: string;
+  subject: string;
   grade: string;
-  phone: string;
-  role: "student" | "admin";
-  completedQuizzes: string[];
-  quizScores: Record<string, number>;
+  correctCount: number;
+  missedCount: number;
+  skippedCount: number;
+  questionsReview: ReviewQuestion[];
+  completedAt: string;
+}
+
+export interface User {
+  id: string; 
+  fullName: string; 
+  email: string; 
+  grade: string; 
+  phone?: string; 
+  role: "student" | "admin"; 
+  quizData: QuizSummaryProps[]; 
+  likedPosts: string[]; 
+  viewedPosts: string[]; 
+  createdAt: string; 
+  updatedAt: string;
 }
 
 export interface Feedback {

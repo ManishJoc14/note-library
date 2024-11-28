@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState} from "react";
+import React, { useState } from "react";
 import { motion } from "framer-motion";
 import {
   BookOpen,
@@ -17,58 +17,73 @@ import {
   TrendingUp,
   Target,
 } from "lucide-react";
-import { collection, addDoc, query, where, getDocs } from "firebase/firestore";
-import { db } from "../../../../lib/firebase";
-import { getFileUrl } from "../../../../lib/supabase";
 import { useAuth } from "../../../../context/AuthContext";
+import { useRouter } from "next/navigation";
 
 const Dashboard = () => {
+  const { user: userData } = useAuth();
+  const router = useRouter();
 
-    const [selectedSubject, setSelectedSubject] = useState('');
-    const [notes, setNotes] = useState<any[]>([]);
-    // const { user : userData }  = useAuth();
-  
-    // Dashboard stats
-    const stats = [
-      { 
-        label: 'Completed Quizzes',
-        value: 0,
-        icon: Brain,
-        color: 'text-purple-500 bg-purple-500/10'
-      },
-      { 
-        label: 'Average Score',
-        value: '85%',
-        icon: Target,
-        color: 'text-blue-500 bg-blue-500/10'
-      },
-      { 
-        label: 'Study Hours',
-        value: '24h',
-        icon: Clock,
-        color: 'text-green-500 bg-green-500/10'
-      },
-      { 
-        label: 'Achievement Points',
-        value: '1,250',
-        icon: Award,
-        color: 'text-yellow-500 bg-yellow-500/10'
-      }
-    ];
-  
-    // Recent activities
-    const activities = [
-      { type: 'quiz', title: 'Completed Physics Quiz', score: 90, date: '2h ago' },
-      { type: 'note', title: 'Downloaded Chemistry Notes', date: '5h ago' },
-      { type: 'achievement', title: 'Earned "Quick Learner" Badge', date: '1d ago' },
-    ];
-  
-    // Upcoming quizzes
-    const upcomingQuizzes = [
-      { subject: 'Mathematics', topic: 'Calculus', date: 'Tomorrow, 10:00 AM' },
-      { subject: 'Physics', topic: 'Mechanics', date: 'In 2 days' },
-    ];
-    
+  if (!userData) {
+    return (
+      <div className="text-gray-500 text-center mt-10">Loading quiz...</div>
+    );
+  }
+
+  // Dashboard stats
+  const stats = [
+    {
+      label: "Completed Quizzes",
+      value: userData?.quizData.length,
+      icon: Brain,
+      color: "text-purple-500 bg-purple-500/10",
+    },
+    {
+      label: "Average Score",
+      value:
+        Math.floor(
+          userData?.quizData.reduce((sum, item) => sum + item.score, 0) /
+            userData?.quizData.length
+        ) || 0,
+      icon: Target,
+      color: "text-blue-500 bg-blue-500/10",
+    },
+    {
+      label: "Study Hours",
+      value: "24h",
+      icon: Clock,
+      color: "text-green-500 bg-green-500/10",
+    },
+    {
+      label: "Achievement Points",
+      value: "1,250",
+      icon: Award,
+      color: "text-yellow-500 bg-yellow-500/10",
+    },
+  ];
+
+  // Recent activities
+  const activities = [
+    {
+      type: "quiz",
+      title: "Completed Physics Quiz",
+      score: 90,
+      date: "2h ago",
+    },
+    { type: "note", title: "Downloaded Chemistry Notes", date: "5h ago" },
+    {
+      type: "achievement",
+      title: 'Earned "Quick Learner" Badge',
+      date: "1d ago",
+    },
+  ];
+
+  // Upcoming quizzes
+  const upcomingQuizzes = [
+    { subject: "Mathematics", topic: "Calculus", date: "Tomorrow, 10:00 AM" },
+    { subject: "Physics", topic: "Mechanics", date: "In 2 days" },
+  ];
+
   return (
     <div className="space-y-8">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -79,6 +94,11 @@ const Dashboard = () => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: index * 0.1 }}
             className="glass-card p-6"
+            onClick={() =>
+              stat.label === "Completed Quizzes"
+                ? router.push("/student/quizzes/completed")
+                : ""
+            }
           >
             <div
               className={`w-12 h-12 rounded-lg ${stat.color} flex items-center justify-center mb-4`}

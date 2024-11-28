@@ -71,23 +71,28 @@ const NoteCard: React.FC<NoteCardProps> = ({
 
         <div className="flex items-center space-x-6 text-gray-400 mt-4 md:mt-0">
           <button
-            className="flex items-center space-x-1 text-red-500 transition"
+            className="flex items-center space-x-1  transition"
             onClick={onLike}
             title="Like"
           >
-            <Heart className="h-5 w-5" />
+            {note.isLiked ? (
+              <span className="h-full">❤️</span> 
+            ) : (
+              <span className="h-full">🤍</span> 
+              // <Heart className={` ${isLiked ? "bg-red-500" : ""} h-5 w-5`} />
+            )}
             <span className="text-md">{note.likes.toLocaleString()}</span>
           </button>
           <button
-            className="flex items-center space-x-1 text-blue-500 transition"
+            className="flex items-center space-x-1  transition"
             onClick={onDownload}
             title="Download"
           >
-            <Download className="h-5 w-5" />
+            <Download className="h-5 w-5 text-blue-500" />
             <span className="text-md">{note.downloads.toLocaleString()}</span>
           </button>
-          <div className="flex items-center space-x-1 text-orange-500">
-            <Eye className="h-5 w-5 " />
+          <div className="flex items-center space-x-1 ">
+            <Eye className="h-5 w-5 text-orange-500" />
             <span className="text-md">{note.views.toLocaleString()} Views</span>
           </div>
         </div>

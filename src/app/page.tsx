@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { ChevronRight, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Toaster } from "react-hot-toast";
@@ -21,7 +21,7 @@ export default function Landing() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const {isAuthenticated , isAdmin} = useAuth();
   const router = useRouter();
-
+  
   const handleClick = () => {
       const role = isAdmin ? "admin" : "student";
       isAuthenticated ? router.push(`/${role}/dashboard`) : setIsAuthModalOpen(true) ;
