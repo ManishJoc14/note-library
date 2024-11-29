@@ -1,8 +1,9 @@
-'use client';
+"use client";
 
-import React from 'react';
-import { ArrowRight } from 'lucide-react';
-import { motion } from 'framer-motion';
+import React from "react";
+import { ArrowRight } from "lucide-react";
+import { motion } from "framer-motion";
+
 
 interface SubjectCardProps {
   name: string;
@@ -10,6 +11,7 @@ interface SubjectCardProps {
 }
 
 const SubjectCard: React.FC<SubjectCardProps> = ({ name, icon }) => {
+
   return (
     <motion.div
       whileHover={{ y: -5 }}
@@ -17,7 +19,9 @@ const SubjectCard: React.FC<SubjectCardProps> = ({ name, icon }) => {
     >
       <div className="flex items-start justify-between">
         <div>
-          <span className="text-3xl mb-4 block filter drop-shadow-lg">{icon}</span>
+          <span className="text-3xl mb-4 block filter drop-shadow-lg">
+            {icon}
+          </span>
           <h3 className="text-lg font-semibold text-white mb-2">{name}</h3>
           <p className="text-sm text-gray-300 mb-4">
             Comprehensive study materials and practice questions
@@ -33,6 +37,6 @@ const SubjectCard: React.FC<SubjectCardProps> = ({ name, icon }) => {
       <div className="absolute bottom-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 to-pink-500 transform scale-x-0 group-hover:scale-x-100 transition-transform duration-300" />
     </motion.div>
   );
-}
+};
 
 export default SubjectCard;

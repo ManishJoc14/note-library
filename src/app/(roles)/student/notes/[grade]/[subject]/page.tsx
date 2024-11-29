@@ -119,18 +119,19 @@ const Notes: React.FC = () => {
   return (
     <>
       <Toaster position="top-right" />
-    <div className="min-h-screen grid grid-cols-1 md:grid-cols-2 gap-2">
-      {notes.map((note) => (
-        <NoteCard
-          key={note.id}
-          note={note}
-          onLike={() => handleLike(note.id)}
-          onDownload={() => handleDownload(note.file_url)}
-          onShare={() => handleShare(note.id)}
-        />
-      ))}
-    </div>
-</>  
+      <div className="min-h-screen grid grid-cols-1 md:grid-cols-2 gap-2">
+        {notes.map((note) => (
+          <NoteCard
+            key={note.id}
+            setNotes={setNotes}
+            note={note}
+            onLike={() => handleLike(note.id)}
+            onDownload={() => handleDownload(note.file_url)}
+            onShare={() => handleShare(note.id)}
+          />
+        ))}
+      </div>
+    </>
   );
 };
 

@@ -19,6 +19,8 @@ export interface Note {
   downloads: number;
   likes: number;
   views: number;
+  likedBy: string[];
+  viewedBy: string[];
   isLiked?: boolean;
 }
 
@@ -67,16 +69,16 @@ export interface QuizSummaryProps {
 }
 
 export interface User {
-  id: string; 
-  fullName: string; 
-  email: string; 
-  grade: string; 
-  phone?: string; 
-  role: "student" | "admin"; 
-  quizData: QuizSummaryProps[]; 
-  likedPosts: string[]; 
-  viewedPosts: string[]; 
-  createdAt: string; 
+  id: string;
+  fullName: string;
+  email: string;
+  grade: string;
+  phone?: string;
+  role: "student" | "admin";
+  quizData: QuizSummaryProps[];
+  likedPosts: string[];
+  viewedPosts: string[];
+  createdAt: string;
   updatedAt: string;
 }
 

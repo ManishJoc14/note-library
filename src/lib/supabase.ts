@@ -79,21 +79,15 @@ export const togglePostLike = async (userId: string, postId: string) => {
       .eq("id", userId)
       .single();
 
-    if (fetchUserError) {
-      console.error(
-        `Error fetching user data (UserID: ${userId}):`,
-        fetchUserError
-      );
-      throw new Error("Failed to fetch user data.");
-    }
+    if (fetchUserError) throw new Error("Failed to fetch user data.");
 
-    const likedPostsIds: string[] = userData?.liked_posts || [];
+    const likedPostsIds: string[] = userData?.liked_posts || []; 
     const hasLiked = likedPostsIds.includes(postId);
 
-    // Step 2: Update the user's liked posts list
+    // Update the user's liked_posts array
     const updatedLikedPostsIds = hasLiked
-      ? likedPostsIds.filter((id) => id !== postId) // Remove postId if already liked
-      : [...likedPostsIds, postId]; // Add postId if not liked
+      ? likedPostsIds.filter((id) => id !== postId)
+      : [...likedPostsIds, postId];
 
     const { error: updateUserError } = await supabase
       .from("users")
@@ -102,25 +96,27 @@ export const togglePostLike = async (userId: string, postId: string) => {
 
     if (updateUserError) throw new Error("Failed to update user like status.");
 
-    // Step 3: Fetch the current likes count for the post
-    const { data: postData, error: fetchPostError } = await supabase
+    // Step 2: Update the liked_by array of the post
+    const { data: likedByData, error: fetchLikedByError } = await supabase
       .from("notes")
-      .select("likes")
+      .select("liked_by")
       .eq("id", postId)
       .single();
 
-    if (fetchPostError) throw new Error("Failed to fetch post data.");
+    if (fetchLikedByError) throw new Error("Failed to fetch liked_by data.");
 
-    const currentLikes = postData?.likes || 0;
-    const newLikes = hasLiked ? currentLikes - 1 : currentLikes + 1;
+    const updatedLikedByData = hasLiked
+      ? likedByData.liked_by.filter((id: string) => id !== userId)
+      : [...likedByData.liked_by, userId];
 
-    // Step 4: Update the like count for the post
-    const { error: updatePostError } = await supabase
+    await supabase
       .from("notes")
-      .update({ likes: newLikes })
+      .update({ liked_by: updatedLikedByData })
       .eq("id", postId);
 
-    if (updatePostError) throw new Error("Failed to update post like count.");
+    // Step 3: Update the likes count
+    const newLikes = updatedLikedByData.length;
+    await supabase.from("notes").update({ likes: newLikes }).eq("id", postId);
 
     return {
       success: true,
@@ -132,7 +128,74 @@ export const togglePostLike = async (userId: string, postId: string) => {
     };
   } catch (error: any) {
     console.error(
-      `Error toggling like status (UserID: ${userId}, PostID: ${postId}):`,
+      `Error toggling like (UserID: ${userId}, PostID: ${postId}):`,
+      error
+    );
+    return { success: false, message: error.message };
+  }
+};
+
+/**
+ * increment views for a post.
+ *
+ * @param userId - The ID of the user viewing the post.
+ * @param postId - The ID of the post being viewed.
+ * @returns - {success, message, views }.
+ */
+export const incrementViews = async (userId: string, postId: string) => {
+  try {
+    const { data: userData, error: fetchUserError } = await supabase
+      .from("users")
+      .select("viewed_posts")
+      .eq("id", userId)
+      .single();
+
+    if (fetchUserError) throw new Error("Failed to fetch user data.");
+
+    const viewedPostsIds: string[] = userData?.viewed_posts || [];
+    if (viewedPostsIds.includes(postId)) {
+      return {
+        success: false,
+        message: "Already viewed",
+        views: viewedPostsIds.length,
+      };
+    }
+
+    const updatedViewedPostsIds = [...viewedPostsIds, postId];
+
+    const { error: updateUserError } = await supabase
+      .from("users")
+      .update({ viewed_posts: updatedViewedPostsIds })
+      .eq("id", userId);
+
+    if (updateUserError) throw new Error("Failed to update viewed posts.");
+
+    // Update the viewed_by array for the post
+    const { data: postViewedData, error: fetchViewedByError } = await supabase
+      .from("notes")
+      .select("viewed_by")
+      .eq("id", postId)
+      .single();
+
+    if (fetchViewedByError)
+      throw new Error("Failed to fetch post viewed_by data.");
+
+    const updatedViewedByData = [...postViewedData?.viewed_by, userId];
+    const newViews = updatedViewedByData.length;
+
+    await supabase
+      .from("notes")
+      .update({ viewed_by: updatedViewedByData, views: newViews })
+      .eq("id", postId);
+
+    return {
+      success: true,
+      message: "Post viewed successfully!",
+      views: newViews,
+    };
+  } catch (error: any) {
+    console.error(
+      `Error incrementing views (UserID: ${userId}, PostID: ${postId}):`,
       error
     );
     return { success: false, message: error.message };
@@ -198,8 +261,8 @@ export const saveFileMetadata = async (metadata: Omit<Note, "id">) => {
       downloads: metadata.downloads || 0,
       likes: metadata.likes || 0,
       views: metadata.views || 0,
-      liked_by: "",
-      viewed_by: "",
+      liked_by: [],
+      viewed_by: [],
     });
 
     if (error) throw error;
@@ -381,7 +444,7 @@ export const saveQuizSummary = async (
 
     // Update the quiz_data by replacing or appending the new summary
     const updatedQuizData = [
-      ...(currentQuizData?.filter((quiz) => quiz.id !== quizSummary.id)),
+      ...currentQuizData?.filter((quiz) => quiz.id !== quizSummary.id),
       quizSummary,
     ];
 

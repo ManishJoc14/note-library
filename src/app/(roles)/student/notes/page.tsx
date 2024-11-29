@@ -3,13 +3,14 @@
 import { Search } from "lucide-react";
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import Link from "next/link"; 
-import { useGrade } from "../../../../context/GradeContext"; 
+import Link from "next/link";
+import { useGrade } from "../../../../context/GradeContext";
 import { subjects11, subjects12 } from "../../../../data/subjects";
 import SubjectCard from "../../../../components/landingComponents/SubjectCard";
 
+
 export default function StudyMaterials() {
-  const { grade, setGrade } = useGrade(); 
+  const { grade, setGrade } = useGrade();
   const [searchQuery, setSearchQuery] = useState("");
 
   const subjects = grade === "11" ? subjects11 : subjects12;
@@ -17,6 +18,7 @@ export default function StudyMaterials() {
   const filteredSubjects = subjects.filter((subject) =>
     subject.name.toLowerCase().includes(searchQuery.toLowerCase())
   );
+
 
   return (
     <section className="relative">
