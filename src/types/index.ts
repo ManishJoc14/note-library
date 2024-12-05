@@ -36,7 +36,6 @@ export interface Quiz {
   avg_score: number;
   created_at: string;
   image: string;
-  taken_by: string;
 }
 
 export interface Question {

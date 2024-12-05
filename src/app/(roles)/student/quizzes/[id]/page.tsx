@@ -4,11 +4,14 @@ import React, { useState, useEffect } from "react";
 import { Quiz, ReviewQuestion } from "../../../../../types";
 import { useAuth } from "../../../../../context/AuthContext";
 import { Clock } from "lucide-react";
-import { fetchQuizById, saveQuizSummary } from "../../../../../lib/supabase";
+import {
+  fetchQuizById,
+  saveQuizSummary,
+  updateUserActivities,
+} from "../../../../../lib/supabase";
 import { useParams, useRouter } from "next/navigation";
 import { Toaster } from "react-hot-toast";
 import { decryptAnswer } from "../../../../../lib/encrypt_decrypt";
-import { v4 as uuidv4 } from "uuid";
 
 // TODO - add skeletons for all when fetching
 const QuizPlayer: React.FC = () => {
@@ -38,8 +41,10 @@ const QuizPlayer: React.FC = () => {
         } else {
           setError("Quiz not found.");
         }
-      } catch (err: any) {
-        setError(err.message || "Failed to fetch quiz.");
+      } catch (err) {
+        setError(
+          (err as { message: string }).message || "Failed to fetch quiz."
+        );
       } finally {
         setIsLoading(false);
       }
@@ -116,6 +121,7 @@ const QuizPlayer: React.FC = () => {
   }
 
   if (isCompleted && quiz && user) {
+    // count skipped, missed, correct
     const correctCount = selectedAnswers.reduce((count, answer, index) => {
       const decryptedCorrectAnswer = decryptAnswer(
         quiz.questions[index].correctAnswer as string
@@ -154,6 +160,7 @@ const QuizPlayer: React.FC = () => {
       };
     });
 
+    // create quiz summary data
     const quizSummaryData = {
       id: quiz.id,
       title: quiz.title,
@@ -172,8 +179,10 @@ const QuizPlayer: React.FC = () => {
       quizSummaryData,
     ];
 
+    // update users quizData
     user.quizData = [...updatedQuizData];
 
+    // save quiz summary and open summary page
     async function save() {
       if (user) {
         await saveQuizSummary(user.id, quizSummaryData);
@@ -181,6 +190,21 @@ const QuizPlayer: React.FC = () => {
       }
     }
     save();
+
+    // update user activites
+    async function updateActivities() {
+      if (user) {
+        await updateUserActivities(user?.id, {
+          type: "quiz",
+          title: `Completed ${quizSummaryData.subject} Quiz`,
+          score: quizSummaryData.score,
+          date: new Date().toISOString(),
+        });
+      }
+    }
+    updateActivities();
+
+    // end of submit
   }
 
   const question = quiz.questions[currentQuestion];

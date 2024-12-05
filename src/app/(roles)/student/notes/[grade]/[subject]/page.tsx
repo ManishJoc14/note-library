@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import {
   fetchNotesByGradeAndSubject,
   togglePostLike,
+  updateUserActivities,
 } from "../../../../../../lib/supabase";
 import { Note } from "../../../../../../types";
 import { useParams } from "next/navigation";
@@ -30,11 +31,13 @@ const Notes: React.FC = () => {
           setNotes(
             data.map((note) => ({
               ...note,
-              isLiked: user.likedPosts.includes(note.id),
+              isLiked: user?.likedPosts.includes(note.id),
             }))
           );
-        } catch (err: any) {
-          setError(err.message || "Failed to fetch notes.");
+        } catch (err) {
+          setError(
+            (err as { message: string }).message || "Failed to fetch notes."
+          );
         } finally {
           setIsLoading(false);
         }
@@ -44,13 +47,10 @@ const Notes: React.FC = () => {
     }
   }, [user, grade, subject]);
 
+  if (!user) return <div className="text-white">User not authenticated </div>;
+
   // Handler for 'Like' action
   const handleLike = async (noteId: string) => {
-    if (!user) {
-      setError("User not authenticated.");
-      return;
-    }
-
     // optimistic ui update (toggle like)
     setNotes((prevNotes) =>
       prevNotes.map((note) =>
@@ -90,6 +90,18 @@ const Notes: React.FC = () => {
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
+
+    // update user activites
+    async function updateActivities(userId: string, subject: string) {
+      if (user) {
+        await updateUserActivities(userId, {
+          type: "note",
+          title: `Downloaded ${subject} Notes`,
+          date: new Date().toISOString(),
+        });
+      }
+    }
+    updateActivities(user?.id, subject);
   };
 
   // Handler for 'Share' action

@@ -50,6 +50,8 @@ const NoteUploader: React.FC = () => {
         downloads: 0,
         likes: 0,
         views: 0,
+        likedBy: [],
+        viewedBy: [],
       };
 
       await saveFileMetadata(metadata);
@@ -62,8 +64,8 @@ const NoteUploader: React.FC = () => {
 
       console.log("File uploaded and metadata saved successfully.");
       toast.success("Note uploaded!", { duration: 3000 });
-    } catch (error: any) {
-      setError(error.message || "An error occurred.");
+    } catch (err) {
+      setError((err as { message: string }).message || "An error occurred.");
     } finally {
       setIsUploading(false);
     }
@@ -154,8 +156,8 @@ const NoteUploader: React.FC = () => {
                     validateFile(selectedFile, "pdf");
                     setFile(selectedFile);
                     setError("");
-                  } catch (err: any) {
-                    setError(err.message);
+                  } catch (err) {
+                    setError((err as { message: string }).message);
                   }
                 }
               }}

@@ -80,7 +80,7 @@ const QuizCreator: React.FC = () => {
         grade,
         duration,
         difficulty,
-        questions: questions.map((q, i) => ({ ...q, id: uuidv4() })), // add id's
+        questions: questions.map((q) => ({ ...q, id: uuidv4() })), // add id's
         participants: 0,
         avg_score: 0,
         created_at: new Date().toISOString(),
@@ -97,8 +97,8 @@ const QuizCreator: React.FC = () => {
 
       console.log("Image uploaded and metadata(quiz) saved successfully.");
       toast.success("Quiz uplaoded!!", { duration: 3000 });
-    } catch (error: any) {
-      setError(error.message || "An error occurred.");
+    } catch (err) {
+      setError((err as { message: string }).message || "An error occurred.");
     } finally {
       setIsUploading(false);
     }
@@ -210,8 +210,8 @@ const QuizCreator: React.FC = () => {
                     validateFile(selectedImage, "image");
                     setImage(selectedImage);
                     setError("");
-                  } catch (err: any) {
-                    setError(err.message);
+                  } catch (err) {
+                    setError((err as { message: string }).message);
                   }
                 }
               }}
@@ -266,10 +266,7 @@ const QuizCreator: React.FC = () => {
                   />
 
                   {question.options.map((option, oIndex) => (
-                    <div
-                      key={oIndex}
-                      className="flex items-center gap-4"
-                    >
+                    <div key={oIndex} className="flex items-center gap-4">
                       <input
                         type="radio"
                         name={`correct-${qIndex}`}

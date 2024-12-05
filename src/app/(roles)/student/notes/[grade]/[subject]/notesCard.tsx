@@ -1,5 +1,5 @@
 import React, { Dispatch, SetStateAction } from "react";
-import { Eye, Heart, Download, Share2, FileText } from "lucide-react";
+import { Eye, Download, Share2, FileText } from "lucide-react";
 import { Note } from "../../../../../../types";
 import { incrementViews } from "../../../../../../lib/supabase";
 import { useAuth } from "../../../../../../context/AuthContext";
@@ -88,13 +88,13 @@ const NoteCard: React.FC<NoteCardProps> = ({
             >
               {note.title}
             </a>
-            <span className="text-md text-gray-400 mt-1">
+            <span className="text-sm text-gray-200 mt-1">
               &nbsp; • {note.subject} • grade {note.grade}
             </span>
             <span className="text-xs text-gray-400"> • {note.file_size}</span>
           </h3>
 
-          <p className="text-lg text-white mt-1 ">{note.description}</p>
+          <p className="text-sm text-white mt-1 ">{note.description}</p>
         </div>
 
         <button

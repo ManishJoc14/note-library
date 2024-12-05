@@ -6,13 +6,15 @@ import { motion } from "framer-motion";
 import { useGrade } from "../../context/GradeContext";
 import { usePathname } from "next/navigation";
 import { fetchAllQuiz } from "../../lib/supabase";
-import Link from "next/link"; 
+import Link from "next/link";
+import Image from "next/image";
+import { Quiz } from "../../types";
 
 const QuizSection = () => {
   const pathname = usePathname();
   const isHomePage = pathname === "/";
 
-  const [quizzes, setQuizzes] = useState<any[]>([]);
+  const [quizzes, setQuizzes] = useState<Quiz[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
 
@@ -29,8 +31,11 @@ const QuizSection = () => {
         setLoading(true);
         const fetchedQuizzes = await fetchAllQuiz(grade);
         setQuizzes(fetchedQuizzes || []);
-      } catch (err: any) {
-        console.error("Failed to fetch quizzes:", err.message);
+      } catch (err) {
+        console.error(
+          "Failed to fetch quizzes:",
+          (err as { message: string }).message
+        );
         setError("Failed to load quizzes. Please try again later.");
       } finally {
         setLoading(false);
@@ -125,9 +130,11 @@ const QuizSection = () => {
                 className="glass-card group hover:shadow-2xl hover:shadow-purple-500/10 transition-all duration-300"
               >
                 <div className="relative h-48 rounded-t-2xl overflow-hidden">
-                  <img
+                  <Image
                     src={quiz.image}
                     alt={quiz.title}
+                    width={500}
+                    height={300}
                     className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-300"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/50 to-transparent" />
@@ -171,14 +178,14 @@ const QuizSection = () => {
                       {quiz.difficulty}
                     </span>
                     <Link href={`/student/quizzes/${quiz.id}`} passHref>
-                    <button className="btn-primary !py-2 !px-4 group-hover:scale-105">
-                      <span>Start Quiz</span>
-                      <ArrowRight
-                        size={16}
-                        className="ml-2 group-hover:translate-x-1 transition-transform"
+                      <button className="btn-primary !py-2 !px-4 group-hover:scale-105">
+                        <span>Start Quiz</span>
+                        <ArrowRight
+                          size={16}
+                          className="ml-2 group-hover:translate-x-1 transition-transform"
                         />
-                    </button>
-                        </Link>
+                      </button>
+                    </Link>
                   </div>
                 </div>
               </motion.div>

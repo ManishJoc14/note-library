@@ -15,7 +15,11 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, googleProvider, db } from "../lib/firebase";
 import { User } from "../types";
 import { useRouter } from "next/navigation";
-import { saveUserToTable, fetchUser } from "../lib/supabase";
+import {
+  saveUserToTable,
+  fetchUser,
+  updateUserActivities,
+} from "../lib/supabase";
 
 interface AuthContextType {
   user: User | null;
@@ -59,8 +63,24 @@ const createUserProfile = async (firebaseUser: FirebaseUser): Promise<User> => {
     updatedAt: new Date().toISOString(),
   };
 
+  // save to firebase
   await setDoc(doc(db, "users", firebaseUser.uid), newUser);
+
+  // save to supabase
   await saveUserToTable(newUser);
+
+  // update user activites
+  async function updateActivities(userId: string) {
+    await updateUserActivities(userId, {
+      type: "account",
+      title: `${newUser.fullName} joined NoteLibrary at ${
+        new Date(newUser.createdAt).toDateString
+      }`,
+      date: new Date().toISOString(),
+    });
+  }
+  updateActivities(newUser?.id);
+
   return newUser;
 };
 
@@ -72,7 +92,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const [loading, setLoading] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const router = useRouter();
-
 
   useEffect(() => {
     const handleUser = async (firebaseUser: FirebaseUser | null) => {
@@ -93,10 +112,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
           viewedPosts: fetchedUser.viewed_posts,
           createdAt: fetchedUser.created_at,
           updatedAt: fetchedUser.updated_at,
-        })
+        });
         setIsAuthenticated(true);
-      }
-      else {
+      } else {
         setUser(null);
         setIsAuthenticated(false);
       }

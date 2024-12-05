@@ -3,7 +3,7 @@ import { Note, Quiz, User, QuizSummaryProps } from "../types";
 import { encryptAnswer } from "./encrypt_decrypt";
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_KEY || "";
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
 /**
@@ -81,7 +81,7 @@ export const togglePostLike = async (userId: string, postId: string) => {
 
     if (fetchUserError) throw new Error("Failed to fetch user data.");
 
-    const likedPostsIds: string[] = userData?.liked_posts || []; 
+    const likedPostsIds: string[] = userData?.liked_posts || [];
     const hasLiked = likedPostsIds.includes(postId);
 
     // Update the user's liked_posts array
@@ -126,12 +126,12 @@ export const togglePostLike = async (userId: string, postId: string) => {
       likes: newLikes,
       isLiked: !hasLiked,
     };
-  } catch (error: any) {
+  } catch (err) {
     console.error(
       `Error toggling like (UserID: ${userId}, PostID: ${postId}):`,
-      error
+      err
     );
-    return { success: false, message: error.message };
+    return { success: false, message: (err as { message: string }).message };
   }
 };
 
@@ -193,12 +193,12 @@ export const incrementViews = async (userId: string, postId: string) => {
       message: "Post viewed successfully!",
       views: newViews,
     };
-  } catch (error: any) {
+  } catch (err) {
     console.error(
       `Error incrementing views (UserID: ${userId}, PostID: ${postId}):`,
-      error
+      err
     );
-    return { success: false, message: error.message };
+    return { success: false, message: (err as { message: string }).message };
   }
 };
 
@@ -222,7 +222,7 @@ export const uploadFile = async (
     const fileName = `${uniqueTitle}.${fileExt}`;
     const filePath = `${path}/${fileName}`;
 
-    const { data, error } = await supabase.storage
+    const { error } = await supabase.storage
       .from(bucket)
       .upload(filePath, file, { cacheControl: "3600", upsert: false });
 
@@ -244,11 +244,11 @@ export const uploadFile = async (
 /**
  * Save file metadata to Supabase database.
  * @param metadata - Metadata for the uploaded file
- * @returns Inserted metadata record.
+ * @returns nothing.
  */
 export const saveFileMetadata = async (metadata: Omit<Note, "id">) => {
   try {
-    const { data, error } = await supabase.from("notes").insert({
+    const { error } = await supabase.from("notes").insert({
       title: metadata.title,
       subject: metadata.subject.toLowerCase(),
       grade: metadata.grade,
@@ -266,8 +266,6 @@ export const saveFileMetadata = async (metadata: Omit<Note, "id">) => {
     });
 
     if (error) throw error;
-
-    return data;
   } catch (error) {
     console.error("Error saving metadata:", error);
     throw new Error("Failed to save metadata. Please try again.");
@@ -302,7 +300,7 @@ export const fetchNotesByGradeAndSubject = async (
 /**
  * Save a quiz to the Supabase database.
  * @param metaData - The quiz data to be saved.
- * @returns Inserted quiz record.
+ * @returns nothing.
  */
 export const saveQuiz = async (metaData: Omit<Quiz, "id">) => {
   try {
@@ -314,7 +312,7 @@ export const saveQuiz = async (metaData: Omit<Quiz, "id">) => {
       };
     });
 
-    const { data, error } = await supabase.from("quizzes").insert({
+    const { error } = await supabase.from("quizzes").insert({
       title: metaData.title,
       subject: metaData.subject,
       grade: metaData.grade,
@@ -329,8 +327,6 @@ export const saveQuiz = async (metaData: Omit<Quiz, "id">) => {
     });
 
     if (error) throw error;
-
-    return data;
   } catch (error) {
     console.error("Error saving quiz:", error);
     throw new Error("Failed to save quiz. Please try again.");
@@ -465,5 +461,117 @@ export const saveQuizSummary = async (
       success: false,
       message: error as string,
     };
+  }
+};
+
+/**
+ * Fetch a user's activities from the database.
+ * @param userId - The ID of the user whose activities are being fetched.
+ * @returns The activities of the user.
+ */
+export const fetchUserActivities = async (userId: string) => {
+  try {
+    const { data, error: fetchError } = await supabase
+      .from("user_activities")
+      .select("activities")
+      .eq("user_id", userId)
+      .single();
+
+    if (fetchError || !data) {
+      throw new Error("Failed to fetch current user activites.");
+    }
+
+    return data.activities;
+  } catch (error) {
+    console.error("Error fetching user activities:", error);
+    throw new Error("Failed to fetch activities.");
+  }
+};
+
+interface NewActivity {
+  type: string;
+  title: string;
+  date: string;
+  score?: number;
+}
+/**
+ * Update a user's activities from the database.
+ * @param userId - The ID of the user whose activities are being updated.
+ * @param newActivity - New activity of user to be inserted.
+ * @returns The updated user activities.
+ */
+export const updateUserActivities = async (
+  userId: string,
+  newActivity: NewActivity
+) => {
+  try {
+    const data = await fetchUserActivities(userId);
+
+    if (!data) {
+      throw new Error("Failed to fetch current user activites.");
+    }
+
+    const updatedUserActivites: NewActivity[] = [...data, newActivity];
+
+    const { data: updatedData, error } = await supabase
+      .from("user_activities")
+      .update({ activities: updatedUserActivites })
+      .eq("id", userId)
+      .select("activities")
+      .single();
+
+    if (!updatedData || error)
+      throw new Error("failed to update user activities");
+
+    return data.activites;
+  } catch (error) {
+    console.error("Error fetching user activities:", error);
+    throw new Error("Failed to fetch activities.");
+  }
+};
+
+/**
+ * Save upcoming_quiz in upcoming_quizzes table.
+ * @param upcoming_quiz - The upcoming_quiz data to be inserted.
+ * @returns saved upcoming_quiz.
+ */
+export const saveUpcomingQuiz = async (upcoming_quiz: {
+  subject: string;
+  topic: string;
+  date: string;
+}) => {
+  try {
+    const { data, error } = await supabase.from("upcoming_quizzes").insert({
+      subject: upcoming_quiz.subject,
+      topic: upcoming_quiz.topic,
+      date: upcoming_quiz.date,
+    });
+
+    if (error) throw error;
+
+    return data;
+  } catch (error) {
+    console.error("Error saving upcoming quiz:", error);
+  }
+};
+
+/**
+ * Fetch upcoming quiz from upcoming_quizzes table.
+ * @returns Array of upcoming quizzes from today.
+ */
+export const getUpcomingQuizes = async () => {
+  try {
+    const todaysDate = new Date().toISOString();
+    const { data, error } = await supabase
+      .from("upcoming_quizzes")
+      .select("*")
+      .gte("date", todaysDate)
+      .order("date", { ascending: true });
+
+    if (error || !data) throw error;
+
+    return data;
+  } catch (error) {
+    console.error("Error saving upcoming quiz:", error);
   }
 };

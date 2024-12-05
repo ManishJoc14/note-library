@@ -1,34 +1,73 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import {
-  BookOpen,
   Award,
   Clock,
-  Download,
-  Eye,
-  LayoutDashboard,
   BookText,
   Brain,
-  MessageSquare,
-  LogOut,
   ChevronRight,
-  TrendingUp,
   Target,
+  User,
 } from "lucide-react";
 import { useAuth } from "../../../../context/AuthContext";
 import { useRouter } from "next/navigation";
+import {
+  fetchUserActivities,
+  getUpcomingQuizes,
+} from "../../../../lib/supabase";
+import { formatCustomDate, timeAgo } from "../../../../lib/helperfuntions";
+import Link from "next/link";
+import { useGrade } from "../../../../context/GradeContext";
+
+interface Activity {
+  type: string;
+  title: string;
+  score?: number;
+  date: string;
+}
+interface UpcomingQuiz {
+  id: string;
+  subject: string;
+  topic: string;
+  date: string;
+}
 
 const Dashboard = () => {
   const { user: userData } = useAuth();
+  const { grade } = useGrade();
   const router = useRouter();
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [upcomingQuizzes, setUpcomingQuizzes] = useState<UpcomingQuiz[]>([]);
 
-  if (!userData) {
-    return (
-      <div className="text-gray-500 text-center mt-10">Loading quiz...</div>
-    );
-  }
+  useEffect(() => {
+    if (userData) {
+      const fetchQuizData = async () => {
+        try {
+          const data: Activity[] =
+            (await fetchUserActivities(userData?.id)) || [];
+          setActivities(data);
+        } catch (error) {
+          console.error(error);
+        }
+      };
+
+      const fetchUpcomingQuizzes = async () => {
+        try {
+          const data: UpcomingQuiz[] = (await getUpcomingQuizes()) || [];
+          setUpcomingQuizzes(data);
+        } catch (error) {
+          console.error(error);
+        }
+      };
+
+      fetchQuizData();
+      fetchUpcomingQuizzes();
+    }
+  }, [userData]);
+
+  if (!userData) return <p className="text-white">Loading...</p>;
 
   // Dashboard stats
   const stats = [
@@ -63,26 +102,28 @@ const Dashboard = () => {
   ];
 
   // Recent activities
-  const activities = [
-    {
-      type: "quiz",
-      title: "Completed Physics Quiz",
-      score: 90,
-      date: "2h ago",
-    },
-    { type: "note", title: "Downloaded Chemistry Notes", date: "5h ago" },
-    {
-      type: "achievement",
-      title: 'Earned "Quick Learner" Badge',
-      date: "1d ago",
-    },
-  ];
+  // const activities = [
 
-  // Upcoming quizzes
-  const upcomingQuizzes = [
-    { subject: "Mathematics", topic: "Calculus", date: "Tomorrow, 10:00 AM" },
-    { subject: "Physics", topic: "Mechanics", date: "In 2 days" },
-  ];
+  // FIXME - Add achievements in database ( from where to add it)
+  //   {
+  //     type: "achievement",
+  //     title: 'Earned "Quick Learner" Badge',
+  //     date: "1d ago",
+  //   },
+  // ];
+
+  const getActivityIcon = (type: string) => {
+    switch (type) {
+      case "quiz":
+        return <Brain size={20} />;
+      case "note":
+        return <BookText size={20} />;
+      case "account":
+        return <User size={20} />;
+      default:
+        return <Award size={20} />;
+    }
+  };
 
   return (
     <div className="space-y-8">
@@ -118,44 +159,44 @@ const Dashboard = () => {
             Recent Activity
           </h3>
           <div className="space-y-4">
-            {activities.map((activity, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="flex items-center justify-between p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
-              >
-                <div className="flex items-center gap-4">
-                  <div
-                    className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                      activity.type === "quiz"
-                        ? "bg-purple-500/20 text-purple-500"
-                        : activity.type === "note"
-                        ? "bg-blue-500/20 text-blue-500"
-                        : "bg-yellow-500/20 text-yellow-500"
-                    }`}
-                  >
-                    {activity.type === "quiz" ? (
-                      <Brain size={20} />
-                    ) : activity.type === "note" ? (
-                      <BookText size={20} />
-                    ) : (
-                      <Award size={20} />
-                    )}
+            {activities.length > 0 ? (
+              activities.map((activity, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="flex items-center justify-between p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+                >
+                  <div className="flex items-center gap-4">
+                    <div
+                      className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                        activity.type === "quiz"
+                          ? "bg-purple-500/20 text-purple-500"
+                          : activity.type === "note"
+                          ? "bg-blue-500/20 text-blue-500"
+                          : "bg-yellow-500/20 text-yellow-500"
+                      }`}
+                    >
+                      {getActivityIcon(activity.type)}
+                    </div>
+                    <div>
+                      <p className="text-white font-medium">{activity.title}</p>
+                      <p className="text-gray-400 text-sm">
+                        {timeAgo(activity.date)}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-white font-medium">{activity.title}</p>
-                    <p className="text-gray-400 text-sm">{activity.date}</p>
-                  </div>
-                </div>
-                {activity.score && (
-                  <span className="text-green-400 font-semibold">
-                    {activity.score}%
-                  </span>
-                )}
-              </motion.div>
-            ))}
+                  {activity.score && (
+                    <span className="text-green-400 font-semibold">
+                      {activity.score}%
+                    </span>
+                  )}
+                </motion.div>
+              ))
+            ) : (
+              <p className="text-white">No activities found</p>
+            )}
           </div>
         </div>
 
@@ -165,27 +206,38 @@ const Dashboard = () => {
             Upcoming Quizzes
           </h3>
           <div className="space-y-4">
-            {upcomingQuizzes.map((quiz, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
-              >
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <h4 className="text-white font-medium">{quiz.subject}</h4>
-                    <p className="text-gray-400 text-sm">{quiz.topic}</p>
+            {upcomingQuizzes.length > 0 ? (
+              upcomingQuizzes.map((quiz, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="p-4 rounded-lg bg-white/5 hover:bg-white/10 transition-colors"
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <h4 className="text-white font-medium">{quiz.subject}</h4>
+                      <p className="text-gray-400 text-sm">{quiz.topic}</p>
+                    </div>
+                    <span className="text-purple-400 text-sm">
+                      {formatCustomDate(quiz.date)}
+                    </span>
                   </div>
-                  <span className="text-purple-400 text-sm">{quiz.date}</span>
-                </div>
-                <button className="btn-primary !py-2 w-full mt-3">
-                  Prepare Now
-                  <ChevronRight size={16} />
-                </button>
-              </motion.div>
-            ))}
+                  <Link
+                    href={`/student/notes/${grade}/${quiz.subject.toLowerCase()}`}
+                    passHref
+                  >
+                    <button className="btn-primary !py-2 w-full mt-3">
+                      Prepare Now
+                      <ChevronRight size={16} />
+                    </button>
+                  </Link>
+                </motion.div>
+              ))
+            ) : (
+              <p className="text-white">No upcoming quizzes</p>
+            )}
           </div>
         </div>
       </div>

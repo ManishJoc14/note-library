@@ -45,8 +45,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
         await signInWithEmail(email, password);
       }
       onClose();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError((err as { message: string }).message);
     } finally {
       setIsLoading(false);
     }
@@ -59,8 +59,8 @@ const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose }) => {
     try {
       await signInWithGoogle();
       onClose();
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err) {
+      setError((err as { message: string }).message);
     } finally {
       setIsLoading(false);
     }
