@@ -15,11 +15,7 @@ import { doc, getDoc, setDoc } from "firebase/firestore";
 import { auth, googleProvider, db } from "../lib/firebase";
 import { User } from "../types";
 import { useRouter } from "next/navigation";
-import {
-  saveUserToTable,
-  fetchUser,
-  updateUserActivities,
-} from "../lib/supabase";
+import { saveUserToTable, fetchUser, addUserActivities } from "../lib/supabase";
 
 interface AuthContextType {
   user: User | null;
@@ -70,16 +66,11 @@ const createUserProfile = async (firebaseUser: FirebaseUser): Promise<User> => {
   await saveUserToTable(newUser);
 
   // update user activites
-  async function updateActivities(userId: string) {
-    await updateUserActivities(userId, {
-      type: "account",
-      title: `${newUser.fullName} joined NoteLibrary at ${
-        new Date(newUser.createdAt).toDateString
-      }`,
-      date: new Date().toISOString(),
-    });
-  }
-  updateActivities(newUser?.id);
+  await addUserActivities(newUser.id, {
+    type: "account",
+    title: `${newUser.fullName} joined NoteLibrary.`,
+    date: newUser.createdAt,
+  });
 
   return newUser;
 };
@@ -94,8 +85,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
   const router = useRouter();
 
   useEffect(() => {
+    let isHandled = false; // Prevent duplicate calls
+
     const handleUser = async (firebaseUser: FirebaseUser | null) => {
+      if (isHandled) return; // Skip if already handled
+      isHandled = true;
+
       setLoading(true);
+
       if (firebaseUser) {
         const userData = await createUserProfile(firebaseUser);
         const fetchedUser = await fetchUser(userData.id);
@@ -118,11 +115,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
         setUser(null);
         setIsAuthenticated(false);
       }
+
       setLoading(false);
     };
 
     const unsubscribe = auth.onAuthStateChanged(handleUser);
-    return () => unsubscribe();
+
+    return () => {
+      isHandled = true; // Prevent further calls on cleanup
+      unsubscribe();
+    };
   }, []);
 
   useEffect(() => {

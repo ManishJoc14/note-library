@@ -7,40 +7,6 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
 /**
- * Add a user to the users table in Supabase.
- * @param user - The user data to be inserted.
- * @returns The inserted user record.
- */
-export const saveUserToTable = async (user: User) => {
-  try {
-    const { data, error } = await supabase.from("users").insert({
-      id: user.id,
-      full_name: user.fullName,
-      email: user.email,
-      grade: user.grade,
-      phone: user.phone,
-      role: user.role,
-      quiz_data: user.quizData,
-      liked_posts: user.likedPosts,
-      viewed_posts: user.viewedPosts,
-      created_at: user.createdAt,
-      updated_at: user.updatedAt,
-    });
-
-    if (error) {
-      console.error("Error saving user to table:", error);
-      throw new Error("Failed to save user. Please try again.");
-    }
-
-    console.log("User saved successfully:", data);
-    return data; // Return the saved user data
-  } catch (error) {
-    console.error("Error in saveUserToTable function:", error);
-    throw error;
-  }
-};
-
-/**
  * Fetch a user from users table in Supabase.
  * @param userid - The user to be fetched.
  * @returns The fetched user record.
@@ -59,6 +25,62 @@ export const fetchUser = async (userId: string) => {
   } catch (error) {
     console.error("Error fetching user by ID:", error);
     throw new Error("Failed to fetch user.");
+  }
+};
+
+/**
+ * Save or fetch a user from the users table in Supabase.
+ * @param user - The user data to be inserted.
+ * @returns The user record from the database.
+ */
+export const saveUserToTable = async (user: User) => {
+  try {
+    // Check if the user already exists
+    const { data: existingUser, error: fetchError } = await supabase
+      .from("users")
+      .select("*")
+      .eq("id", user.id)
+      .single();
+
+    // If no rows are found, fetchError will have code "PGRST116"
+    if (fetchError && fetchError.code !== "PGRST116") {
+      // If it's any other error, rethrow it
+      throw fetchError;
+    }
+
+    // If the user exists, return the existing user data
+    if (existingUser) {
+      console.log("User already exists in Supabase:", existingUser);
+      return existingUser;
+    }
+
+    // If the user does not exist, insert them into the table
+    const { data: newUser, error: saveError } = await supabase
+      .from("users")
+      .insert({
+        id: user.id,
+        full_name: user.fullName,
+        email: user.email,
+        grade: user.grade,
+        phone: user.phone,
+        role: user.role,
+        quiz_data: user.quizData,
+        liked_posts: user.likedPosts,
+        viewed_posts: user.viewedPosts,
+        created_at: user.createdAt,
+        updated_at: user.updatedAt,
+      })
+      .select()
+      .single(); // Ensure we return the inserted row as a single object
+
+    if (saveError) {
+      throw saveError;
+    }
+
+    console.log("New user saved to Supabase:", newUser);
+    return newUser;
+  } catch (error) {
+    console.error("Error in saveUserToTable function:", error);
   }
 };
 
@@ -527,6 +549,28 @@ export const updateUserActivities = async (
   } catch (error) {
     console.error("Error fetching user activities:", error);
     throw new Error("Failed to fetch activities.");
+  }
+};
+
+/**
+ * Add a user's activity to the database.
+ * @param userId - The ID of the user whose activity is being added.
+ * @param newActivity - New activity of user to be inserted.
+ * @returns notihing.
+ */
+export const addUserActivities = async (
+  userId: string,
+  newActivity: NewActivity
+) => {
+  try {
+    const { error } = await supabase.from("user_activities").insert({
+      user_id: userId,
+      activities: [newActivity],
+    });
+
+    if (error) throw new Error("Failed to add user activity");
+  } catch (error) {
+    console.error("Error adding user activity:", error);
   }
 };
 
