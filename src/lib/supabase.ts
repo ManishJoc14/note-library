@@ -529,19 +529,13 @@ export const updateUserActivities = async (
   try {
     const data = await fetchUserActivities(userId);
 
-    if (!data) {
-      throw new Error("Failed to fetch current user activites.");
-    }
-
     const updatedUserActivites: NewActivity[] = [...data, newActivity];
-
-    const { data: updatedData, error } = await supabase
+    const { error } = await supabase
       .from("user_activities")
       .update({ activities: updatedUserActivites })
-      .eq("id", userId)
-      .select("activities")
-      .single();
+      .eq("user_id", userId);
 
+    const updatedData = await fetchUserActivities(userId);
     if (!updatedData || error)
       throw new Error("failed to update user activities");
 
